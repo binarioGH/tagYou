@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <windows.h>
 #include <conio.h>
+#include <list>
+using namespace std;
 
 void gotoxy(int x, int y);
 void hideCursor(void);
 void drawBorders(void);
 void cls(void);
+void endAnimation(void);
 
 class Person{
 private:
@@ -14,9 +17,15 @@ private:
 	int body = 30;
 public:
 	int x, y;
-	Person(int _x, int _y){
+	int delay, counter = 0;
+	Person(int _x, int _y, int d){
 		x = _x;
 		y = _y;
+		delay = d;
+	}
+	~Person(void){
+		Sleep(200);gotoxy(x,y);printf("*");
+		Sleep(200);gotoxy(x,y);printf(" ");
 	}
 	void keyMove(void);
 	void botMove(int ex, int ey);
@@ -24,13 +33,19 @@ public:
 };
 void Person::move(int direction){
 	gotoxy(x,y);printf(" ");
-	switch(direction){
-		case 119:y--;body=30;break;
-		case 115:y++;body=31;break;
-		case 97:x--;body=17;break;
-		case 100:x++;body=16;break;
+	if(counter == delay){
+		switch(direction){
+			case 119:y--;body=30;break;
+			case 115:y++;body=31;break;
+			case 97:x--;body=17;break;
+			case 100:x++;body=16;break;
+		}
+		collition();
+		counter = 0;
 	}
-	collition();
+	else{
+		counter += 1;
+	}	
 	gotoxy(x,y);printf("%c",body);
 	return;
 }
@@ -42,10 +57,11 @@ void Person::collition(void){
 	return;
 }
 void Person::keyMove(void){
+	char key = 'p';
 	if(kbhit()){
-		char key = getch();
-		move(key);
+		key = getch();
 	}
+	move(key);
 	return;
 }
 
@@ -81,17 +97,30 @@ int main(){
 	cls();
 	hideCursor();
 	drawBorders();
-	Person mc (39, 19);
-	Person mb (39, 4);
+	Person mc (39, 19, 0);
+	list<Person*> bots;
+	list<Person*>::iterator bit;
+	bots.push_back(new Person(39, 8, 2));
+	bots.push_back(new Person(13,4, 3));
+	bots.push_back(new Person(65,4, 3));
 	bool notTag = true;
 	while(notTag){
 		mc.keyMove();
-		mb.botMove(mc.x, mc.y);
-		if(mc.inHitBox(mb.x, mb.y)){
-			notTag = false;
+		for(bit=bots.begin();bit!=bots.end();bit++){
+			(*bit)->botMove(mc.x, mc.y);
+			if(mc.inHitBox((*bit)->x, (*bit)->y)){
+				notTag = false;
+			}
 		}
+		
 		Sleep(100);
 	}
+	for(bit=bots.begin();bit!=bots.end();bit++){
+		delete(*bit);
+		bit = bots.erase(bit);
+	}
+	delete &mc;
+	endAnimation();
 	return 0;
 }
 
@@ -137,5 +166,18 @@ void cls(void){
 		}
 	}
 	gotoxy(0,0);
+	return;
+}
+
+void endAnimation(void){
+	cls();
+	drawBorders();
+	int i = 0;
+	for(i;i<5;i++){
+		gotoxy(37,11);printf("GAME OVER");
+		Sleep(500);
+		gotoxy(37,11);printf("         ");
+		Sleep(500);
+	}
 	return;
 }
